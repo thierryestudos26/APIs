@@ -1,0 +1,21 @@
+{
+  "name": "trabalho-wagner-apis",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Loja com serviços de clientes, produtos e pedidos",
+  "scripts": {
+    "start": "node iniciar.js",
+    "simples": "node api-simples/server.js",
+    "rest": "node api-rest/server.js",
+    "restful": "node api-restful/server.js",
+    "test": "node --test testes.js",
+    "frontend": "node front-end/server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

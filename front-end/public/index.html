@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Loja | Trabalho Wagner</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body><header class="cabecalho"><div class="marca"><span class="icone">L</span><div><strong>Minha loja</strong><span>Clientes, produtos e pedidos</span></div></div></header>
+<main><section class="introducao"><p class="sobretitulo">GESTÃO DA LOJA</p><h1>Do cadastro ao pedido.</h1><p>Cadastre clientes e produtos para começar a vender.</p></section>
+<p id="mensagem" role="status" aria-live="polite" hidden></p>
+<fieldset id="controles" class="controles"><legend class="sr-only">Gestão</legend>
+<section class="barra"><div><label for="secao">Área</label><select id="secao"><option value="clientes">Clientes</option><option value="produtos">Produtos</option><option value="pedidos">Pedidos</option></select></div><p id="descricao"></p><button type="button" id="recarregar" class="secundario">Atualizar</button></section>
+<div class="layout"><section class="cartao"><h2 id="titulo-formulario"></h2><form id="formulario"><div id="campos"></div><button id="salvar">Salvar</button><button type="button" id="cancelar" class="secundario" hidden>Cancelar edição</button></form></section>
+<section class="cartao"><div class="titulo-lista"><h2 id="titulo-lista"></h2><span id="quantidade" class="contador"></span></div><div id="vazio" class="vazio" hidden>Nenhum registro.</div><div class="tabela-container"><table><thead id="cabecalho-tabela"></thead><tbody id="registros"></tbody></table></div></section></div>
+</fieldset><details class="cartao inspecao"><summary>Ver comunicação com as APIs</summary><pre id="resposta">Nenhuma requisição.</pre></details></main><footer>Trabalho Wagner · Serviços independentes</footer></body></html>
