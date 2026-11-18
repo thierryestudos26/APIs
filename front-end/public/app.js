@@ -1,3 +1,4 @@
+import { TIPO_PEDIDOS, montarCorpo, obterCampos } from './hipermidia.js';
 const $ = id => document.getElementById(id);
 const moeda = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 const configuracao = {
@@ -28,11 +29,11 @@ async function chamar(url,metodo='GET',dados,tipo='application/json'){
  const destino=new URL(url,location.origin);
  if(destino.origin!==location.origin || !destino.pathname.startsWith('/api/')) throw new Error('Endereço de API inválido.');
  let r;
- try{r=await fetch(destino,{method:metodo,headers:dados===undefined?{}:{'Content-Type':tipo},body:dados===undefined?undefined:JSON.stringify(dados),signal:AbortSignal.timeout(8000)});}
+ try{r=await fetch(destino,{method:metodo,headers:{Accept:destino.pathname.startsWith('/api/restful/')?TIPO_PEDIDOS:'*/*',...(dados===undefined?{}:{'Content-Type':tipo})},body:dados===undefined?undefined:JSON.stringify(dados),signal:AbortSignal.timeout(8000)});}
  catch{throw new Error('Serviço indisponível. Verifique se os servidores estão em execução.');}
  const texto=await r.text();let corpo=texto;
- if(r.headers.get('content-type')?.includes('application/json')) corpo=texto?JSON.parse(texto):null;
- historico.unshift({metodo,url,status:r.status,location:r.headers.get('location'),resposta:corpo});historico.splice(10);
+ if(/(?:application\/json|\+json)(?:;|$)/i.test(r.headers.get('content-type') || '')) corpo=texto?JSON.parse(texto):null;
+ historico.unshift({metodo,url,status:r.status,location:r.headers.get('location'),cache:r.headers.get('cache-control'),etag:r.headers.get('etag'),links:r.headers.get('link'),resposta:corpo});historico.splice(10);
  $('resposta').textContent=historico.map(x=>JSON.stringify(x,null,2)).join('\n\n');
  if(!r.ok)throw new Error(corpo?.erro || 'Erro HTTP '+r.status);
  return corpo;
@@ -57,7 +58,7 @@ function renderizar(){
   for(const valor of valores){const td=document.createElement('td');td.textContent=valor;linha.append(td);}
   const td=document.createElement('td');const acoes=document.createElement('div');acoes.className='acoes';
   if(secao==='pedidos'){
-   for(const acao of item.acoes || []) if(acao.rel==='cancelar') acoes.append(botao('Cancelar',()=>{if(confirm('Cancelar este pedido?'))executar(async()=>{
+   for(const acao of item.acoes || []) acoes.append(botao(acao.titulo,()=>{if(confirm('Cancelar este pedido?'))executar(async()=>{
     await enviarAcao(acao,{});await depois('Pedido cancelado.');
    });},'perigo'));
   }else{
@@ -72,16 +73,7 @@ function renderizar(){
  }
 }
 async function enviarAcao(acao,valores){
- if(!acao)throw new Error('Ação indisponível.');
- const corpo={};
- for(const c of acao.campos || []){
-  let v=Object.hasOwn(c,'valor')?c.valor:valores[c.nome];
-  if(c.tipo==='number')v=Number(v);
-  if(c.obrigatorio && (v===undefined || v===''))throw new Error('Preencha '+c.nome+'.');
-  if(c.tipo==='number' && (!Number.isFinite(v) || (c.minimo!==undefined && v<c.minimo) || (c.maximo!==undefined && v>c.maximo)))throw new Error('Valor inválido para '+c.nome+'.');
-  corpo[c.nome]=v;
- }
- return chamar(acao.href,acao.metodo,corpo,acao.tipoConteudo);
+ return chamar(acao.href,acao.metodo,montarCorpo(acao,valores),acao.tipoConteudo);
 }
 async function listar(){
  itens=[];
@@ -101,10 +93,22 @@ async function carregar(){
  if(secao!=='pedidos'){campo('nome','Nome');campo(secao==='clientes'?'email':'preco',secao==='clientes'?'E-mail':'Preço (R$)',secao==='clientes'?'email':'number');}
  else{
   try{
-   const [clientes,produtos]=await Promise.all([chamar('/api/simples/listarClientes','POST'),chamar('/api/rest/produtos')]);
-   campo('clienteId','Cliente','text',clientes);campo('produtoId','Produto','text',produtos.map(p=>({...p,nome:p.nome+' — '+moeda.format(p.preco)})));
-   const q=campo('quantidade-pedido','Quantidade','number');q.name='quantidade';q.min='1';q.max='1000';q.step='1';q.value='1';
-   if(!clientes.length || !produtos.length){avisar('Cadastre ao menos um cliente e um produto para criar pedidos.');return;}
+   const campos = await obterCampos(criar,chamar);
+   let faltaOpcao=false;
+   for(const c of campos){
+    if(Object.hasOwn(c,'valor'))continue;
+    const input=campo('pedido-'+c.nome,c.titulo || c.nome,c.tipo==='number'?'number':'text',c.alternativas);
+    input.name=c.nome;input.required=Boolean(c.obrigatorio);
+    if(c.tipo==='number'){
+     input.removeAttribute('min');input.removeAttribute('max');
+     if(c.minimo!==undefined)input.min=String(c.minimo);
+     if(c.maximo!==undefined)input.max=String(c.maximo);
+     input.step=c.inteiro?'1':'any';
+     if(c.minimo!==undefined)input.value=String(c.minimo);
+    }
+    if(c.alternativas && !c.alternativas.length)faltaOpcao=true;
+   }
+   if(faltaOpcao){avisar('Cadastre ao menos um cliente e um produto para criar pedidos.');return;}
   }catch(e){avisar('Histórico carregado, mas não é possível criar pedidos: '+e.message,true);return;}
  }
  $('salvar').disabled=secao==='pedidos'&&!criar;

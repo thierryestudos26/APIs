@@ -1,5 +1,10 @@
 import { validarProduto, extrairProduto } from './produto.js';
 export function registrarRotas(app, repo) {
+ app.use('/produtos',(req,res,next)=>{
+  if (!req.accepts('application/json')) return res.status(406).json({erro:'Esta API oferece application/json.'});
+  if (['POST','PUT'].includes(req.method) && !req.is('application/json')) return res.status(415).json({erro:'Envie application/json.'});
+  next();
+ });
  app.get('/produtos',(req,res)=>res.json(repo.listar()));
  app.get('/produtos/:id',(req,res)=>{
   const p=repo.buscar(req.params.id);
